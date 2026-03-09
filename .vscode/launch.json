@@ -17,18 +17,18 @@
             "file": "${workspaceFolder}/index.html"
         },
         {
+            "name": "Open localhost in Edge",
+            "type": "msedge",
+            "request": "launch",
+            "url": "http://localhost:5500/index.html",
+            "webRoot": "${workspaceFolder}"
+        },
+        {
             "name": "Launch index.html (Firefox)",
             "type": "firefox",
             "request": "launch",
             "reAttach": true,
             "file": "${workspaceFolder}/index.html"
-        },
-        {
-            "name": "Open with Live Server",
-            "type": "live-server",
-            "request": "launch",
-            "file": "${workspaceFolder}/index.html",
-            "runtimeExecutable": "npx"
         }
     ]
 }
